@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <title>푸리에 스튜디오</title>
+        <style>
+            :root {
+                box-sizing: border-box;
+                padding-top: env(safe-area-inset-top,0px);
+                padding-bottom: env(safe-area-inset-bottom,0px);
+                color-scheme: light;
+                --bg: #eef0f6;
+                --stage: #fff;
+                --pn: #fff;
+                --fg: #1b1e28;
+                --mut: #6b7185;
+                --line: #d6d9e4;
+                --grid: #e6e9f1;
+                --c1: #2b9a3e;
+                --c2: #d99a00;
+                --c3: #e8590c;
+                --c4: #1c7ed6
+            }
+
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme="light"]) {
+                    color-scheme:dark;
+                    --bg: #0b0d12;
+                    --stage: #07080c;
+                    --pn: #141720;
+                    --fg: #e8eaf2;
+                    --mut: #8b91a6;
+                    --line: #2a2f3d;
+                    --grid: #181c26;
+                    --c1: #9be564;
+                    --c2: #ffd43b;
+                    --c3: #ff8a3d;
+                    --c4: #74c0fc
+                }
+            }
+
+            :root[data-theme="dark"] {
+                color-scheme: dark;
+                --bg: #0b0d12;
+                --stage: #07080c;
+                --pn: #141720;
+                --fg: #e8eaf2;
+                --mut: #8b91a6;
+                --line: #2a2f3d;
+                --grid: #181c26;
+                --c1: #9be564;
+                --c2: #ffd43b;
+                --c3: #ff8a3d;
+                --c4: #74c0fc
+            }
+
+            html {
+                scroll-padding-top: env(safe-area-inset-top,0px)
+            }
+
+            html,body {
+                height: 100%;
+                margin: 0
+            }
+
+            body {
+                display: flex;
+                flex-direction: column;
+                background: var(--bg);
+                color: var(--fg);
+                font: 14px/1.45 system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif
+            }
+
+            [hidden] {
+                display: none!important
+            }
+
+            header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                border-bottom: 1px solid var(--line);
+                background: var(--pn)
+            }
+
+            h1 {
+                font-size: 15px;
+                margin: 0 auto 0 0
+            }
+
+            button,select,textarea {
+                font: inherit;
+                color: inherit;
+                background: var(--bg);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 6px 10px
+            }
+
+            button {
+                cursor: pointer
+            }
+
+            button:hover {
+                border-color: var(--c3)
+            }
+
+            button[aria-selected="true"],button.on {
+                background: var(--c3);
+                border-color: var(--c3);
+                color: #fff
+            }
+
+            main {
+                flex: 1;
+                min-height: 0;
+                display: grid;
+                grid-template-columns: 1fr 300px
+            }
+
+            #stage {
+                position: relative;
+                min-width: 0;
+                min-height: 0;
+                background: var(--stage)
+            }
+
+            canvas {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                display: block;
+                touch-action: none
+            }
+
+            #co {
+                position: absolute;
+                left: 10px;
+                bottom: 8px;
+                color: var(--mut);
+                font-size: 12px;
+                pointer-events: none
+            }
+
+            aside {
+                padding: 12px;
+                overflow: auto;
+                background: var(--pn);
+                border-left: 1px solid var(--line)
+            }
+
+            aside section {
+                display: flex;
+                flex-direction: column;
+                gap: 12px
+            }
+
+            label {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                color: var(--mut);
+                font-size: 12px
+            }
+
+            label b {
+                color: var(--fg)
+            }
+
+            .row {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap
+            }
+
+            .row>* {
+                flex: 1
+            }
+
+            .ck {
+                flex-direction: row;
+                align-items: center;
+                gap: 6px
+            }
+
+            textarea {
+                height: 150px;
+                resize: vertical;
+                font: 12px/1.5 ui-monospace,Menlo,Consolas,monospace
+            }
+
+            #stat {
+                font: 15px/1.6 Georgia,"Times New Roman",serif;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 8px 12px;
+                background: var(--bg)
+            }
+
+            #stat i {
+                font-size: 19px
+            }
+
+            #stat b {
+                color: var(--c3);
+                font-weight: 400
+            }
+
+            .up {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 12px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid var(--line)
+            }
+
+            .fb {
+                display: block;
+                text-align: center;
+                padding: 10px;
+                border: 1px dashed var(--c3);
+                border-radius: 8px;
+                color: var(--fg);
+                font-size: 14px;
+                cursor: pointer
+            }
+
+            .fb:hover {
+                background: var(--bg)
+            }
+
+            #gl {
+                max-height: 230px;
+                overflow: auto;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 6px 8px;
+                background: var(--bg);
+                color: var(--fg);
+                font: 11px/1.7 ui-monospace,Menlo,Consolas,monospace
+            }
+
+            #gl div {
+                display: flex;
+                gap: 6px;
+                align-items: baseline
+            }
+
+            #gl i {
+                flex: none;
+                width: 7px;
+                height: 7px;
+                border-radius: 50%
+            }
+
+            .sm button {
+                padding: 6px 2px;
+                font-size: 13px;
+                white-space: nowrap
+            }
+
+            small {
+                color: var(--mut)
+            }
+
+            @media (max-width: 760px) {
+                main {
+                    grid-template-columns:1fr;
+                    grid-template-rows: minmax(0,1fr) auto
+                }
+
+                aside {
+                    border-left: 0;
+                    border-top: 1px solid var(--line);
+                    max-height: 44vh
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>푸리에 스튜디오</h1>
+            <button id="tf" aria-selected="true">푸리에 급수</button>
+            <button id="tc" aria-selected="false">좌표평면</button>
+            <button id="th" title="라이트/다크">◐</button>
+        </header>
+        <main>
+            <div id="stage">
+                <canvas id="cv"></canvas>
+                <div id="co"></div>
+            </div>
+            <aside>
+                <div class="up">
+                    <label class="fb" for="file">📁 이미지 선택</label>
+                    <input type="file" id="file" accept="image/*" hidden>
+                    <label>
+                        윤곽 민감도 <b id="tv">20</b>
+                        %<input type="range" id="thr" min="4" max="60" value="20">
+                    </label>
+                    <small id="fn">이미지를 화면에 끌어다 놓아도 돼요.</small>
+                </div>
+                <section id="pf">
+                    <div class="row">
+                        <button id="gn">N 키워가기</button>
+                        <button id="gr">오차 최소화</button>
+                    </div>
+                    <div class="row">
+                        <button id="demo">하트 예제</button>
+                    </div>
+                    <small>키워가기는 지금 N까지, 오차 최소화는 오차가 최소가 될 때까지 원을 하나씩 늘려요.</small>
+                    <label>
+                        표시 방식
+                        <select id="fm">
+                            <option value="xy">X·Y 분리 (영상 스타일)</option>
+                            <option value="c">복소 에피사이클</option>
+                        </select>
+                    </label>
+                    <label>
+                        원의 개수 N<input type="range" id="n" min="1" max="100" value="60">
+                    </label>
+                    <div id="stat"></div>
+                    <label>
+                        한 바퀴 <b id="Tv">20</b>
+                        초<input type="range" id="T" min="3" max="60" value="20">
+                    </label>
+                    <label class="ck">
+                        <input type="checkbox" id="sc" checked>원 · 보조선 표시
+                    </label>
+                    <div class="row">
+                        <button id="pp">⏸ 일시정지</button>
+                        <button id="rp">↻ 처음부터</button>
+                    </div>
+                    <small>이미지의 윤곽선을 한 줄로 이어 푸리에 급수로 근사합니다. 선이 단순한 그림일수록 잘 나와요.</small>
+                </section>
+                <section id="pc" hidden>
+                    <label>
+                        단순화 정밀도 <b id="ev">2</b>
+                        px<input type="range" id="eps" min="0.5" max="8" step="0.5" value="2">
+                    </label>
+                    <small>이미지를 올리면 윤곽을 선·원 그래프로 바꿔 하나씩 그려요. 아래 도구로 직접 그릴 수도 있어요.</small>
+                    <div class="row" id="tools">
+                        <button data-t="move" class="on">이동</button>
+                        <button data-t="line">선</button>
+                        <button data-t="circle">원</button>
+                        <button data-t="point">점</button>
+                    </div>
+                    <small>도구를 고르고 캔버스를 드래그하면 그려져요. 휠로 확대·축소, 이동 도구로 화면을 끌 수 있어요.</small>
+                    <label>
+                        사용된 그래프 <b id="gc">0</b>
+                        개<div id="gl"></div>
+                    </label>
+                    <div class="row sm">
+                        <button id="rep">다시 재생</button>
+                        <button id="clr">모두 지우기</button>
+                        <button id="home">원점으로</button>
+                    </div>
+                    <small id="msg"></small>
+                </section>
+            </aside>
+        </main>
+        <script>
+            const $ = i => document.getElementById(i)
+              , cv = $('cv')
+              , ctx = cv.getContext('2d')
+              , R = Math.PI * 2
+              , nI = $('n')
+              , fm = $('fm');
+            let sz = {
+                w: 1,
+                h: 1
+            }, C = {}, mode = 'f', P, tr, M = 1, t = 0, play = 1, dirty = 1, src, gt, last = 0, first = 1, tool = 'move', drag, shapes = [], V = {
+                x: 0,
+                y: 0,
+                s: 48
+            };
+            function theme() {
+                const s = getComputedStyle(document.documentElement);
+                ['fg', 'mut', 'grid', 'c1', 'c2', 'c3', 'c4'].forEach(k => C[k] = s.getPropertyValue('--' + k).trim())
+            }
+            $('th').onclick = () => {
+                const d = document.documentElement
+                  , dk = d.dataset.theme ? d.dataset.theme == 'dark' : matchMedia('(prefers-color-scheme:dark)').matches;
+                d.dataset.theme = dk ? 'light' : 'dark';
+                theme()
+            }
+            ;
+            matchMedia('(prefers-color-scheme:dark)').onchange = theme;
+            new ResizeObserver( () => {
+                const r = cv.parentNode.getBoundingClientRect()
+                  , d = devicePixelRatio || 1;
+                sz = {
+                    w: r.width,
+                    h: r.height
+                };
+                cv.width = r.width * d;
+                cv.height = r.height * d;
+                ctx.setTransform(d, 0, 0, d, 0, 0)
+            }
+            ).observe(cv.parentNode);
+            const ln = (a, b, c, d) => {
+                ctx.beginPath();
+                ctx.moveTo(a, b);
+                ctx.lineTo(c, d);
+                ctx.stroke()
+            }
+              , dot = (x, y, r) => {
+                ctx.beginPath();
+                ctx.arc(x, y, Math.max(0, r), 0, R);
+                ctx.fill()
+            }
+            ;
+            function setMode(m) {
+                mode = m;
+                $('pf').hidden = m != 'f';
+                $('pc').hidden = m != 'c';
+                $('tf').setAttribute('aria-selected', m == 'f');
+                $('tc').setAttribute('aria-selected', m == 'c');
+                $('co').textContent = '';
+                if (src)
+                    fromImg();
+                else if (m == 'c' && first) {
+                    first = 0;
+                    run()
+                }
+            }
+            $('tf').onclick = () => setMode('f');
+            $('tc').onclick = () => setMode('c');
+
+            /* ---------- 푸리에 ---------- */
+            let AX, AY, cur = 0, hold = 0, err = 0, grow = 0;
+            function setPath(px, py) {
+                const n = px.length - (px.length % 2 ? 0 : 1);
+                let a = 1e9
+                  , b = -1e9
+                  , c = 1e9
+                  , d = -1e9;
+                for (let i = 0; i < n; i++) {
+                    a = Math.min(a, px[i]);
+                    b = Math.max(b, px[i]);
+                    c = Math.min(c, py[i]);
+                    d = Math.max(d, py[i])
+                }
+                const mx = (a + b) / 2
+                  , my = (c + d) / 2
+                  , x = Float64Array.from(px.slice(0, n), v => v - mx)
+                  , y = Float64Array.from(py.slice(0, n), v => v - my)
+                  , ct = new Float64Array(n)
+                  , st = new Float64Array(n);
+                for (let i = 0; i < n; i++) {
+                    ct[i] = Math.cos(R * i / n);
+                    st[i] = Math.sin(R * i / n)
+                }
+                const K = (n - 1) >> 1
+                  , re = v => {
+                    const o = [];
+                    for (let k = 0; k <= K; k++) {
+                        let p = 0
+                          , q = 0;
+                        for (let j = 0; j < n; j++) {
+                            const m = k * j % n;
+                            p += v[j] * ct[m];
+                            q -= v[j] * st[m]
+                        }
+                        o.push({
+                            k,
+                            A: Math.hypot(p, q) * (k ? 2 : 1) / n,
+                            p: Math.atan2(q, p)
+                        })
+                    }
+                    return o.sort( (u, w) => w.A - u.A)
+                }
+                  , cx = [];
+                for (let k = -K; k <= K; k++) {
+                    let p = 0
+                      , q = 0;
+                    for (let j = 0; j < n; j++) {
+                        const m = ((k * j % n) + n) % n;
+                        p += x[j] * ct[m] + y[j] * st[m];
+                        q += y[j] * ct[m] - x[j] * st[m]
+                    }
+                    cx.push({
+                        k,
+                        A: Math.hypot(p, q) / n,
+                        p: Math.atan2(q, p)
+                    })
+                }
+                P = {
+                    n,
+                    x,
+                    y,
+                    ext: Math.max(b - a, d - c) / 2 || 1,
+                    tx: re(x),
+                    ty: re(y),
+                    tc: cx.sort( (u, w) => w.A - u.A)
+                };
+                clearInterval(gt);
+                grow = 0;
+                AX = null;
+                nI.max = K;
+                nI.value = Math.min(K, 80);
+                t = 0;
+                dirty = 1
+            }
+            function heart() {
+                const n = 720
+                  , x = []
+                  , y = [];
+                for (let i = 0; i < n; i++) {
+                    const a = R * i / n;
+                    x.push(16 * Math.sin(a) ** 3);
+                    y.push(-(13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)))
+                }
+                src = null;
+                setPath(x, y)
+            }
+            function fromImg() {
+                const S = 240
+                  , r = Math.min(S / src.width, S / src.height, 1.5)
+                  , w = Math.max(16, src.width * r | 0)
+                  , h = Math.max(16, src.height * r | 0)
+                  , c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                const g = c.getContext('2d');
+                g.fillStyle = '#fff';
+                g.fillRect(0, 0, w, h);
+                g.drawImage(src, 0, 0, w, h);
+                const d = g.getImageData(0, 0, w, h).data
+                  , L = new Float32Array(w * h)
+                  , E = new Float32Array(w * h);
+                let mx = 1e-6;
+                for (let i = 0; i < w * h; i++)
+                    L[i] = .3 * d[i * 4] + .59 * d[i * 4 + 1] + .11 * d[i * 4 + 2];
+                for (let y = 1; y < h - 1; y++)
+                    for (let x = 1; x < w - 1; x++) {
+                        const i = y * w + x
+                          , gx = L[i - w + 1] + 2 * L[i + 1] + L[i + w + 1] - L[i - w - 1] - 2 * L[i - 1] - L[i + w - 1]
+                          , gy = L[i + w - 1] + 2 * L[i + w] + L[i + w + 1] - L[i - w - 1] - 2 * L[i - w] - L[i - w + 1];
+                        mx = Math.max(mx, E[i] = Math.hypot(gx, gy))
+                    }
+                const th = mx * $('thr').value / 100;
+                let px = []
+                  , py = [];
+                for (let y = 1; y < h - 1; y++)
+                    for (let x = 1; x < w - 1; x++) {
+                        const i = y * w + x
+                          , e = E[i];
+                        if (e > th && (e >= E[i - 1] && e >= E[i + 1] || e >= E[i - w] && e >= E[i + w])) {
+                            px.push(x);
+                            py.push(y)
+                        }
+                    }
+                if (px.length < 20) {
+                    $('fn').textContent = '윤곽을 찾지 못했어요. 민감도를 낮춰 보세요.';
+                    return
+                }
+                const sk = Math.ceil(px.length / 2200);
+                px = px.filter( (_, i) => i % sk == 0);
+                py = py.filter( (_, i) => i % sk == 0);
+                const n = px.length
+                  , u = new Uint8Array(n)
+                  , ox = []
+                  , oy = [];
+                let k = 0;
+                for (let s = 0; s < n; s++) {
+                    u[k] = 1;
+                    ox.push(px[k]);
+                    oy.push(py[k]);
+                    let b = -1
+                      , bd = 1e18;
+                    for (let j = 0; j < n; j++)
+                        if (!u[j]) {
+                            const dd = (px[j] - px[k]) ** 2 + (py[j] - py[k]) ** 2;
+                            if (dd < bd) {
+                                bd = dd;
+                                b = j
+                            }
+                        }
+                    if (b < 0)
+                        break;
+                    k = b
+                }
+                mode == 'c' ? toGraph(ox, oy, w, h) : setPath(ox, oy)
+            }
+            function load(f) {
+                if (!f || !f.type.startsWith('image/'))
+                    return;
+                const r = new FileReader();
+                r.onload = () => {
+                    const im = new Image();
+                    im.onload = () => {
+                        src = im;
+                        $('fn').textContent = f.name;
+                        fromImg()
+                    }
+                    ;
+                    im.src = r.result
+                }
+                ;
+                r.readAsDataURL(f)
+            }
+            $('file').onchange = e => load(e.target.files[0]);
+            document.ondragover = e => e.preventDefault();
+            document.ondrop = e => {
+                e.preventDefault();
+                load(e.dataTransfer.files[0])
+            }
+            ;
+            function rebuild() {
+                const N = +nI.value
+                  , xy = fm.value == 'xy'
+                  , n = P.n
+                  , m = Math.ceil(2000 / n);
+                M = n * m;
+                if (!AX || N < cur || AX.length != M + 1) {
+                    AX = new Float64Array(M + 1);
+                    AY = new Float64Array(M + 1);
+                    cur = 0
+                }
+                for (let i = cur; i < N; i++) {
+                    const a = xy ? P.tx[i] : P.tc[i]
+                      , b = xy ? P.ty[i] : a;
+                    for (let q = 0; q <= M; q++) {
+                        const u = q / M;
+                        if (xy) {
+                            AX[q] += a.A * Math.cos(R * a.k * u + a.p);
+                            AY[q] += b.A * Math.cos(R * b.k * u + b.p)
+                        } else {
+                            const h = R * a.k * u + a.p;
+                            AX[q] += a.A * Math.cos(h);
+                            AY[q] += a.A * Math.sin(h)
+                        }
+                    }
+                }
+                cur = N;
+                let s = 0;
+                for (let j = 0; j < n; j++) {
+                    const dx = AX[j * m] - P.x[j]
+                      , dy = AY[j * m] - P.y[j];
+                    s += dx * dx + dy * dy
+                }
+                const e = err = Math.sqrt(s / n) / (2 * P.ext) * 100;
+                $('stat').innerHTML = '<i>N</i> = <b>' + (xy ? 2 * N : N) + '</b> <small>(' + (xy ? 'X ' + N + ' + Y ' + N : '복소') + ')</small><br>오차 = <b>' + e.toFixed(e < 1 ? 2 : 1) + '%</b>';
+                dirty = 0
+            }
+            function chain(T, N, x, y, S, tt, sw, lim) {
+                for (let i = 0; i < N && i < T.length; i++) {
+                    const q = T[i]
+                      , h = R * q.k * tt + q.p
+                      , r = q.A * S
+                      , a = r * Math.cos(h)
+                      , b = r * Math.sin(h)
+                      , dx = sw ? b : a
+                      , dy = sw ? a : b;
+                    if (lim && i < 160 && r > .7) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, r, 0, R);
+                        ctx.stroke();
+                        ln(x, y, x + dx, y + dy)
+                    }
+                    x += dx;
+                    y += dy
+                }
+                return [x, y]
+            }
+            function drawF() {
+                const {w, h} = sz
+                  , N = +nI.value
+                  , S = Math.min(w, h) * .31 / P.ext
+                  , ox = w * .58
+                  , oy = h * .6
+                  , sc = $('sc').checked
+                  , xy = fm.value == 'xy'
+                  , tt = t % 1
+                  , cnt = t < 1 && !grow ? Math.floor(t * M) : M;
+                const gx = i => ox + AX[i] * S
+                  , gy = i => oy + AY[i] * S;
+                ctx.globalAlpha = 1;
+                ctx.lineJoin = ctx.lineCap = 'round';
+                ctx.strokeStyle = C.c3;
+                ctx.lineWidth = 2.2;
+                ctx.beginPath();
+                ctx.moveTo(gx(0), gy(0));
+                for (let i = 1; i <= cnt; i++)
+                    ctx.lineTo(gx(i), gy(i));
+                ctx.stroke();
+                const r0 = Math.max(0, cnt - Math.ceil(M * 0.025));
+                if (t < 1 && !grow && cnt > r0) {
+                    ctx.strokeStyle = C.fg;
+                    ctx.globalAlpha = 0.5;
+                    ctx.lineWidth = 3.5;
+                    ctx.beginPath();
+                    ctx.moveTo(gx(r0), gy(r0));
+                    for (let i = r0 + 1; i <= cnt; i++)
+                        ctx.lineTo(gx(i), gy(i));
+                    ctx.stroke();
+                    ctx.globalAlpha = 1
+                }
+                let px, py;
+                ctx.lineWidth = 1;
+                ctx.globalAlpha = .75;
+                if (xy) {
+                    ctx.strokeStyle = C.c1;
+                    const a = chain(P.tx, N, ox, h * .1, S, tt, 0, sc);
+                    ctx.strokeStyle = C.c2;
+                    const b = chain(P.ty, N, w * .08, oy, S, tt, 1, sc);
+                    ctx.globalAlpha = 1;
+                    px = a[0];
+                    py = b[1];
+                    if (sc) {
+                        ctx.setLineDash([5, 4]);
+                        ctx.strokeStyle = C.c1;
+                        ln(a[0], a[1], px, py);
+                        ctx.strokeStyle = C.c2;
+                        ln(b[0], b[1], px, py);
+                        ctx.setLineDash([]);
+                        ctx.font = '13px system-ui';
+                        ctx.textAlign = 'left';
+                        ctx.fillStyle = C.c1;
+                        ctx.fillText('x축', ox + 10, h * .1 - 10);
+                        ctx.fillStyle = C.c2;
+                        ctx.fillText('y축', w * .08 + 10, oy - 10)
+                    }
+                } else {
+                    ctx.strokeStyle = C.c1;
+                    const a = chain(P.tc, N, ox, oy, S, tt, 0, sc);
+                    ctx.globalAlpha = 1;
+                    px = a[0];
+                    py = a[1]
+                }
+                ctx.fillStyle = C.c3;
+                dot(px, py, 4.5);
+                ctx.strokeStyle = C.fg;
+                ctx.lineWidth = 1.5;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.arc(px, py, 9, 0, R);
+                ctx.stroke();
+                ctx.globalAlpha = 1
+            }
+            $('thr').oninput = () => $('tv').textContent = $('thr').value;
+            $('thr').onchange = () => src && fromImg();
+            nI.oninput = () => {
+                clearInterval(gt);
+                grow = 0;
+                dirty = 1
+            }
+            ;
+            fm.onchange = () => {
+                AX = null;
+                dirty = 1;
+                t = 0
+            }
+            ;
+            $('T').oninput = () => $('Tv').textContent = $('T').value;
+            $('demo').onclick = heart;
+            const ramp = (mx, ze) => {
+                clearInterval(gt);
+                let N = 1;
+                grow = 1;
+                play = 1;
+                t = 0;
+                $('pp').textContent = '⏸ 일시정지';
+                gt = setInterval( () => {
+                    nI.value = N = Math.min(N, mx);
+                    rebuild();
+                    if (ze && err <= 0.01 || N >= mx) {
+                        clearInterval(gt);
+                        grow = 0;
+                        t = 0;
+                        return
+                    }
+                    N += Math.max(1, N * 0.07 | 0)
+                }
+                , 90)
+            }
+            ;
+            $('gn').onclick = () => ramp(+nI.value);
+            $('gr').onclick = () => ramp(+nI.max, 1);
+            $('pp').onclick = () => {
+                play = !play;
+                $('pp').textContent = play ? '⏸ 일시정지' : '▶ 재생'
+            }
+            ;
+            $('rp').onclick = () => {
+                t = 0;
+                play = 1;
+                $('pp').textContent = '⏸ 일시정지'
+            }
+            ;
+
+            /* ---------- 좌표평면 ---------- */
+            const DEMO = ['선 -4 -2 4 -2', '선 4 -2 4 2', '선 4 2 -4 2', '선 -4 2 -4 -2', '원 0 0 2', '점 0 0', '함수 2*sin(x)'];
+            let ls, nl = 0;
+            const f2 = v => String(+v.toFixed(2))
+              , tm = (n, c) => Math.abs(c) < 0.005 ? n : '(' + n + (c < 0 ? ' + ' : ' − ') + f2(Math.abs(c)) + ')'
+              , eq = s => {
+                if (s.type == 'line') {
+                    const dx = s.x2 - s.x1
+                      , dy = s.y2 - s.y1
+                      , a = Math.abs(dx) >= Math.abs(dy)
+                      , m = (a ? dy / dx : dx / dy) || 0
+                      , b = a ? s.y1 - m * s.x1 : s.x1 - m * s.y1
+                      , v = a ? 'x' : 'y'
+                      , p = a ? [s.x1, s.x2] : [s.y1, s.y2];
+                    return (a ? 'y' : 'x') + ' = ' + (Math.abs(m) < 0.005 ? f2(b) : f2(m) + v + (Math.abs(b) < 0.005 ? '' : (b < 0 ? ' − ' : ' + ') + f2(Math.abs(b)))) + '  {' + f2(Math.min(...p)) + ' ≤ ' + v + ' ≤ ' + f2(Math.max(...p)) + '}'
+                }
+                if (s.type == 'circle')
+                    return tm('x', s.cx) + '² + ' + tm('y', s.cy) + '² = ' + f2(s.r) + '²';
+                if (s.type == 'point')
+                    return '(' + f2(s.x) + ', ' + f2(s.y) + ')';
+                return 'y = ' + (s.f.ex || 'f(x)').split('**').join('^')
+            }
+            ;
+            function sync(ts) {
+                const g = $('gl');
+                if (ls !== shapes) {
+                    ls = shapes;
+                    nl = 0;
+                    g.innerHTML = '';
+                    $('gc').textContent = 0
+                }
+                let k = nl
+                  , h = '';
+                for (; k < shapes.length && ts >= shapes[k].t0; k++)
+                    h += '<div><i style="background:var(--' + shapes[k].col + ')"></i><span>' + eq(shapes[k]) + '</span></div>';
+                if (k > nl) {
+                    g.insertAdjacentHTML('beforeend', h);
+                    g.scrollTop = g.scrollHeight;
+                    nl = k;
+                    $('gc').textContent = k
+                }
+            }
+            function toGraph(px, py, w, h) {
+                const k = 16 / Math.max(w, h)
+                  , ch = [];
+                let c = [0];
+                for (let i = 1; i < px.length; i++) {
+                    if ((px[i] - px[i - 1]) ** 2 + (py[i] - py[i - 1]) ** 2 > 49) {
+                        ch.push(c);
+                        c = []
+                    }
+                    c.push(i)
+                }
+                ch.push(c);
+                const rdp = (p, e) => {
+                    if (p.length < 3)
+                        return p;
+                    const a = p[0]
+                      , b = p[p.length - 1]
+                      , dx = b[0] - a[0]
+                      , dy = b[1] - a[1]
+                      , l = Math.hypot(dx, dy) || 1;
+                    let m = 0
+                      , id = 0;
+                    for (let i = 1; i < p.length - 1; i++) {
+                        const d = Math.abs(dy * (p[i][0] - a[0]) - dx * (p[i][1] - a[1])) / l;
+                        if (d > m) {
+                            m = d;
+                            id = i
+                        }
+                    }
+                    return m > e ? rdp(p.slice(0, id + 1), e).slice(0, -1).concat(rdp(p.slice(id), e)) : [a, b]
+                }
+                  , X = v => (v - w / 2) * k
+                  , Y = v => (h / 2 - v) * k
+                  , build = e => {
+                    const o = [];
+                    ch.forEach( (c, ci) => {
+                        if (c.length < 4)
+                            return;
+                        const p = c.map(i => [px[i], py[i]])
+                          , a = p[0]
+                          , b = p[p.length - 1]
+                          , cl = (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 <= 25;
+                        if (cl && p.length >= 16) {
+                            const cx = p.reduce( (s, q) => s + q[0], 0) / p.length
+                              , cy = p.reduce( (s, q) => s + q[1], 0) / p.length
+                              , rs = p.map(q => Math.hypot(q[0] - cx, q[1] - cy))
+                              , r = rs.reduce( (s, v) => s + v, 0) / rs.length;
+                            if (r >= 3 && Math.max(...rs.map(v => Math.abs(v - r))) < 0.08 * r) {
+                                o.push({
+                                    type: 'circle',
+                                    cx: X(cx),
+                                    cy: Y(cy),
+                                    r: r * k,
+                                    ci
+                                });
+                                return
+                            }
+                        }
+                        let v;
+                        if (cl) {
+                            let f = 0
+                              , m = 0;
+                            p.forEach( (q, i) => {
+                                const d = (q[0] - a[0]) ** 2 + (q[1] - a[1]) ** 2;
+                                if (d > m) {
+                                    m = d;
+                                    f = i
+                                }
+                            }
+                            );
+                            v = rdp(p.slice(0, f + 1), e).slice(0, -1).concat(rdp(p.slice(f), e));
+                            v.push(a)
+                        } else
+                            v = rdp(p, e);
+                        for (let i = 1; i < v.length; i++)
+                            o.push({
+                                type: 'line',
+                                x1: X(v[i - 1][0]),
+                                y1: Y(v[i - 1][1]),
+                                x2: X(v[i][0]),
+                                y2: Y(v[i][1]),
+                                ci
+                            })
+                    }
+                    );
+                    return o.filter(s => s.type != 'line' || s.x1 != s.x2 || s.y1 != s.y2)
+                }
+                ;
+                let e = +$('eps').value
+                  , L = build(e);
+                while (L.length > 1200 && e < 30) {
+                    e *= 1.4;
+                    L = build(e)
+                }
+                const len = s => s.type == 'line' ? Math.hypot(s.x2 - s.x1, s.y2 - s.y1) : R * s.r
+                  , tot = L.reduce( (a, s) => a + len(s), 0) || 1
+                  , D = Math.min(9000, Math.max(2500, L.length * 50));
+                let at = performance.now() + 200;
+                shapes = L.map(s => (s.t0 = at,
+                s.nd = 1,
+                s.dur = Math.max(8, len(s) / tot * D),
+                at += s.dur,
+                s.col = 'c3',
+                s));
+                V = {
+                    x: 0,
+                    y: 0,
+                    s: Math.min(sz.w, sz.h) / 18
+                };
+                $('msg').textContent = '선 ' + L.filter(s => s.type == 'line').length + '개 · 원 ' + L.filter(s => s.type == 'circle').length + '개 (단순화 ' + e.toFixed(1) + 'px)'
+            }
+            $('eps').oninput = () => $('ev').textContent = $('eps').value;
+            $('eps').onchange = () => src && fromImg();
+            const sx = x => sz.w / 2 + (x - V.x) * V.s
+              , sy = y => sz.h / 2 - (y - V.y) * V.s
+              , wx = x => (x - sz.w / 2) / V.s + V.x
+              , wy = y => V.y - (y - sz.h / 2) / V.s
+              , q2 = v => {
+                const k = V.s > 150 ? 10 : 2;
+                return Math.round(v * k) / k
+            }
+            ;
+            function add(s, d=0) {
+                s.t0 = performance.now() + d;
+                s.col = 'c' + (shapes.length % 4 + 1);
+                shapes.push(s)
+            }
+            function mk(e) {
+                e = e.replace(/\^/g, '**').replace(/π/g, 'PI');
+                const ok = Object.getOwnPropertyNames(Math);
+                if (!/^[\w+\-*/().,\s]*$/.test(e) || !(e.match(/[a-z_]\w*/gi) || []).every(w => w == 'x' || ok.includes(w)))
+                    return null;
+                try {
+                    const f = new Function('x','with(Math){return (' + e + ')}');
+                    f(0);
+                    f.ex = e;
+                    return f
+                } catch (_) {
+                    return null
+                }
+            }
+            function run() {
+                let i = 0
+                  , bad = 0;
+                DEMO.forEach(l => {
+                    const m = l.split(/\s+/)
+                      , k = m[0].toLowerCase()
+                      , a = m.slice(1).map(Number)
+                      , ok = n => a.length >= n && a.slice(0, n).every(isFinite);
+                    let s = null;
+                    if (/^(line|선)$/.test(k)) {
+                        if (ok(4))
+                            s = {
+                                type: 'line',
+                                x1: a[0],
+                                y1: a[1],
+                                x2: a[2],
+                                y2: a[3],
+                                dur: 800
+                            }
+                    } else if (/^(circle|원)$/.test(k)) {
+                        if (ok(3))
+                            s = {
+                                type: 'circle',
+                                cx: a[0],
+                                cy: a[1],
+                                r: Math.abs(a[2]),
+                                dur: 1100
+                            }
+                    } else if (/^(point|점)$/.test(k)) {
+                        if (ok(2))
+                            s = {
+                                type: 'point',
+                                x: a[0],
+                                y: a[1],
+                                dur: 600
+                            }
+                    } else {
+                        const f = mk(l.replace(/^(fn|함수)\s+/i, '').replace(/^y\s*=\s*/i, ''));
+                        if (f)
+                            s = {
+                                type: 'fn',
+                                f,
+                                dur: 1500
+                            }
+                    }
+                    s ? add(s, i++ * 700) : bad++
+                }
+                );
+                $('msg').textContent = bad ? bad + '개 줄을 이해하지 못했어요.' : ''
+            }
+            function drawC(ts) {
+                sync(ts);
+                const {w, h} = sz
+                  , raw = 64 / V.s
+                  , p = 10 ** Math.floor(Math.log10(raw))
+                  , st = [1, 2, 5, 10].find(m => m * p >= raw) * p;
+                ctx.font = '11px system-ui';
+                ctx.textAlign = 'left';
+                ctx.lineCap = 'round';
+                for (let i = Math.ceil(wx(0) / st); i <= Math.floor(wx(w) / st); i++) {
+                    const X = Math.round(sx(i * st)) + .5;
+                    ctx.strokeStyle = i ? C.grid : C.mut;
+                    ctx.lineWidth = i ? 1 : 1.5;
+                    ln(X, 0, X, h);
+                    if (i) {
+                        ctx.fillStyle = C.mut;
+                        ctx.fillText(+(i * st).toFixed(8), X + 3, Math.min(h - 4, Math.max(12, sy(0) + 13)))
+                    }
+                }
+                for (let j = Math.ceil(wy(h) / st); j <= Math.floor(wy(0) / st); j++) {
+                    const Y = Math.round(sy(j * st)) + .5;
+                    ctx.strokeStyle = j ? C.grid : C.mut;
+                    ctx.lineWidth = j ? 1 : 1.5;
+                    ln(0, Y, w, Y);
+                    if (j) {
+                        ctx.fillStyle = C.mut;
+                        ctx.fillText(+(j * st).toFixed(8), Math.min(w - 34, Math.max(4, sx(0) + 5)), Y - 3)
+                    }
+                }
+                shapes.forEach(s => {
+                    const p = Math.min(1, (ts - s.t0) / s.dur);
+                    if (p <= 0)
+                        return;
+                    const e = s.nd ? p : 1 - (1 - p) ** 3;
+                    ctx.strokeStyle = ctx.fillStyle = C[s.col];
+                    ctx.lineWidth = s.nd ? 2 : 2.4;
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1;
+                    if (s.type == 'line') {
+                        const X = sx(s.x1 + (s.x2 - s.x1) * e)
+                          , Y = sy(s.y1 + (s.y2 - s.y1) * e);
+                        ln(sx(s.x1), sy(s.y1), X, Y);
+                        if (!s.nd) {
+                            dot(sx(s.x1), sy(s.y1), 3.5);
+                            dot(X, Y, p < 1 ? 5 : 3.5)
+                        } else if (p < 1)
+                            dot(X, Y, 4)
+                    } else if (s.type == 'circle') {
+                        const X = sx(s.cx)
+                          , Y = sy(s.cy)
+                          , r = s.r * V.s
+                          , a = R * e;
+                        ctx.beginPath();
+                        ctx.arc(X, Y, r, 0, -a, true);
+                        ctx.stroke();
+                        if (p < 1) {
+                            ctx.globalAlpha = .5;
+                            ctx.setLineDash([4, 4]);
+                            ctx.lineWidth = 1.2;
+                            ln(X, Y, X + r * Math.cos(a), Y - r * Math.sin(a));
+                            ctx.setLineDash([]);
+                            ctx.globalAlpha = 1;
+                            dot(X + r * Math.cos(a), Y - r * Math.sin(a), 5)
+                        } else {
+                            ctx.globalAlpha = .1;
+                            dot(X, Y, r);
+                            ctx.globalAlpha = 1
+                        }
+                        if (!s.nd)
+                            dot(X, Y, 3)
+                    } else if (s.type == 'point') {
+                        const X = sx(s.x)
+                          , Y = sy(s.y);
+                        dot(X, Y, 5 * e);
+                        ctx.globalAlpha = 1 - e;
+                        ctx.beginPath();
+                        ctx.arc(X, Y, 6 + 24 * e, 0, R);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = C.fg;
+                        ctx.fillText('(' + s.x + ', ' + s.y + ')', X + 8, Y - 8)
+                    } else {
+                        const n = 420
+                          , x0 = wx(0)
+                          , dx = (wx(w) - x0) / n
+                          , m = Math.floor(n * e);
+                        let on = 0, lx, ly;
+                        ctx.beginPath();
+                        for (let i = 0; i <= m; i++) {
+                            const x = x0 + i * dx
+                              , y = s.f(x);
+                            if (isFinite(y) && Math.abs(y) < 1e5) {
+                                lx = sx(x);
+                                ly = sy(y);
+                                on ? ctx.lineTo(lx, ly) : ctx.moveTo(lx, ly);
+                                on = 1
+                            } else
+                                on = 0
+                        }
+                        ctx.stroke();
+                        if (p < 1 && lx != null)
+                            dot(lx, ly, 5)
+                    }
+                }
+                );
+                ctx.globalAlpha = 1;
+                if (drag && !drag.pan) {
+                    ctx.strokeStyle = C.fg;
+                    ctx.globalAlpha = .6;
+                    ctx.setLineDash([6, 5]);
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    if (tool == 'line') {
+                        ctx.moveTo(sx(drag.a), sy(drag.b));
+                        ctx.lineTo(sx(drag.x), sy(drag.y))
+                    } else
+                        ctx.arc(sx(drag.a), sy(drag.b), Math.hypot(drag.x - drag.a, drag.y - drag.b) * V.s, 0, R);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1
+                }
+            }
+            const pos = e => {
+                const r = cv.getBoundingClientRect();
+                return [e.clientX - r.left, e.clientY - r.top]
+            }
+            ;
+            cv.onpointerdown = e => {
+                if (mode != 'c')
+                    return;
+                cv.setPointerCapture(e.pointerId);
+                const [x,y] = pos(e);
+                if (tool == 'move' || e.button == 2)
+                    drag = {
+                        pan: 1,
+                        x,
+                        y,
+                        vx: V.x,
+                        vy: V.y
+                    };
+                else {
+                    const a = q2(wx(x))
+                      , b = q2(wy(y));
+                    if (tool == 'point')
+                        add({
+                            type: 'point',
+                            x: a,
+                            y: b,
+                            dur: 600
+                        });
+                    else
+                        drag = {
+                            a,
+                            b,
+                            x: a,
+                            y: b
+                        }
+                }
+            }
+            ;
+            cv.onpointermove = e => {
+                const [x,y] = pos(e);
+                if (mode == 'c')
+                    $('co').textContent = '(' + wx(x).toFixed(2) + ', ' + wy(y).toFixed(2) + ')';
+                if (!drag)
+                    return;
+                if (drag.pan) {
+                    V.x = drag.vx - (x - drag.x) / V.s;
+                    V.y = drag.vy + (y - drag.y) / V.s
+                } else {
+                    drag.x = q2(wx(x));
+                    drag.y = q2(wy(y))
+                }
+            }
+            ;
+            cv.onpointerup = () => {
+                if (drag && !drag.pan) {
+                    const {a, b, x, y} = drag
+                      , r = Math.hypot(x - a, y - b);
+                    if (r > 0)
+                        add(tool == 'line' ? {
+                            type: 'line',
+                            x1: a,
+                            y1: b,
+                            x2: x,
+                            y2: y,
+                            dur: 800
+                        } : {
+                            type: 'circle',
+                            cx: a,
+                            cy: b,
+                            r,
+                            dur: 1100
+                        })
+                }
+                drag = null
+            }
+            ;
+            cv.addEventListener('wheel', e => {
+                if (mode != 'c')
+                    return;
+                e.preventDefault();
+                const [x,y] = pos(e)
+                  , mx = wx(x)
+                  , my = wy(y);
+                V.s = Math.min(2000, Math.max(6, V.s * Math.exp(-e.deltaY * .0015)));
+                V.x = mx - (x - sz.w / 2) / V.s;
+                V.y = my + (y - sz.h / 2) / V.s
+            }
+            , {
+                passive: false
+            });
+            $('tools').onclick = e => {
+                const b = e.target.closest('button');
+                if (!b)
+                    return;
+                tool = b.dataset.t;
+                cv.style.cursor = tool == 'move' ? 'grab' : 'crosshair';
+                [...$('tools').children].forEach(c => c.classList.toggle('on', c == b))
+            }
+            ;
+            $('rep').onclick = () => {
+                let at = performance.now() + 200;
+                (shapes = shapes.slice()).forEach(s => {
+                    s.t0 = at;
+                    at += s.nd ? s.dur : 700
+                }
+                )
+            }
+            ;
+            $('clr').onclick = () => {
+                shapes = []
+            }
+            ;
+            $('home').onclick = () => {
+                V = {
+                    x: 0,
+                    y: 0,
+                    s: 48
+                }
+            }
+            ;
+
+            function loop(ts) {
+                requestAnimationFrame(loop);
+                const dt = Math.min(.05, (ts - last) / 1000 || 0);
+                last = ts;
+                ctx.clearRect(0, 0, sz.w, sz.h);
+                if (mode == 'f') {
+                    if (P) {
+                        if (dirty)
+                            rebuild();
+                        if (play) {
+                            if (grow)
+                                t = (t + dt / (+$('T').value)) % 1;
+                            else if (t < 1) {
+                                hold = 0;
+                                t = Math.min(1, t + dt / (+$('T').value))
+                            } else if ((hold += dt) > 2.2) {
+                                t = 0;
+                                hold = 0
+                            }
+                        }
+                        drawF()
+                    }
+                } else
+                    drawC(ts)
+            }
+            theme();
+            heart();
+            requestAnimationFrame(loop);
+        </script>
+    </body>
+</html>
